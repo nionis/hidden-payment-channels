@@ -7,13 +7,13 @@ import {
   ERC20Contract,
 } from "@railgun-community/cookbook";
 import TopUpStep from "./top-up.step";
-import { getHiddenPaymentsContract } from "../contract";
+import { getHiddenPaymentChannelsContract } from "../contract";
 import { NETWORK_CONFIG } from "../env";
 
 export default class TopUpRecipe extends Recipe {
   readonly config = {
-    name: "HiddenPayments TopUp Recipe",
-    description: "Top up HiddenPayments contract from a railgun wallet.",
+    name: "HiddenPaymentChannels TopUp Recipe",
+    description: "Top up HiddenPaymentChannels contract from a railgun wallet.",
     minGasLimit: 2_500_000n,
   };
 
@@ -30,9 +30,7 @@ export default class TopUpRecipe extends Recipe {
 
   protected async getInternalSteps(): Promise<Step[]> {
     const railgunContractAddress = NETWORK_CONFIG.proxyContract;
-    const hiddenPaymentsContract = await getHiddenPaymentsContract(
-      this.provider
-    );
+    const hpcContract = await getHiddenPaymentChannelsContract(this.provider);
     const wethContractHelper = new ERC20Contract(
       NETWORK_CONFIG.baseToken.wrappedAddress,
       this.provider as any
@@ -41,7 +39,7 @@ export default class TopUpRecipe extends Recipe {
     return [
       new ApproveERC20SpenderStep(railgunContractAddress, this.tokenInfo),
       new TopUpStep(
-        hiddenPaymentsContract,
+        hpcContract,
         wethContractHelper,
         railgunContractAddress,
         this.tokenInfo

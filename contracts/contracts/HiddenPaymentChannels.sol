@@ -35,7 +35,7 @@ interface IRailgunSmartWallet {
 // TODO: add time-locked withdrawl period (e.g. 31 days)
 // TODO: prefix signature to prevent replay attacks across EVMs
 // TODO: harden the smart contract
-contract HiddenPayments {
+contract HiddenPaymentChannels {
     using SafeERC20 for IERC20;
     using ECDSA for bytes32;
 

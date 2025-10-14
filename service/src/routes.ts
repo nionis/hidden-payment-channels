@@ -23,8 +23,8 @@ let hostNonce = 0n;
 let userNonce = 0n;
 
 export default function createRoutes(
-  hiddenPaymentsContract: Contract,
-  hiddenPaymentsContractAddress: string,
+  hpcContract: Contract,
+  hpcContractAddress: string,
   latestNonce: bigint,
   signingWallet: Wallet,
   hostRailgunInfo: {
@@ -52,9 +52,7 @@ export default function createRoutes(
     if (ticket.toRailgunAddress !== hostRailgunInfo.address) {
       return { valid: false, error: "ticket is not for the host" };
     }
-    if (
-      ticket.hiddenPaymentsContractAddress !== hiddenPaymentsContractAddress
-    ) {
+    if (ticket.hiddenPaymentChannelsContractAddress !== hpcContractAddress) {
       return {
         valid: false,
         error: "ticket is not for the hidden payments contract",
@@ -70,7 +68,7 @@ export default function createRoutes(
         keccak256(toUtf8Bytes(ticket.toRailgunAddress)),
         ticket.amount.toString(),
         ticket.nonce.toString(),
-        ticket.hiddenPaymentsContractAddress,
+        ticket.hiddenPaymentChannelsContractAddress,
       ]
     );
 
@@ -95,7 +93,7 @@ export default function createRoutes(
     if (!isEngineInitialized()) {
       return res.status(503).json({
         error:
-          "HiddenPayments service not initialized yet. Please wait and try again.",
+          "HiddenPaymentChannels service not initialized yet. Please wait and try again.",
       });
     }
     next();
@@ -110,9 +108,8 @@ export default function createRoutes(
 
     async (req: Request, res: Response) => {
       try {
-        const totalFunded = await hiddenPaymentsContract.totalAmountFunded();
-        const totalWithdrawn =
-          await hiddenPaymentsContract.totalAmountWithdrawn();
+        const totalFunded = await hpcContract.totalAmountFunded();
+        const totalWithdrawn = await hpcContract.totalAmountWithdrawn();
         const availableFunds = totalFunded - totalWithdrawn;
 
         res.json({
@@ -143,7 +140,7 @@ export default function createRoutes(
           toRailgunAddress: hostRailgunInfo.address,
           nonce: ++userNonce,
           amount: TICKET_COST + TICKET_COST * unclaimedTickets,
-          hiddenPaymentsContractAddress,
+          hiddenPaymentChannelsContractAddress: hpcContractAddress,
         };
 
         // Construct the message hash exactly as the contract does:
@@ -154,7 +151,7 @@ export default function createRoutes(
             keccak256(toUtf8Bytes(ticket.toRailgunAddress)),
             ticket.amount.toString(),
             ticket.nonce.toString(),
-            ticket.hiddenPaymentsContractAddress,
+            ticket.hiddenPaymentChannelsContractAddress,
           ]
         );
 

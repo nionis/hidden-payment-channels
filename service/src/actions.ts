@@ -20,12 +20,12 @@ import {
 import TopUpRecipe from "./cookbook/top-up.recipe";
 import ClaimTicketStep from "./cookbook/claim-ticket.step";
 import { NETWORK, NETWORK_CONFIG } from "./env";
-import { getHiddenPaymentsContract } from "./contract";
+import { getHiddenPaymentChannelsContract } from "./contract";
 import { ClaimableTicket } from "./types";
 
 /**
  * Use this to shield public ETH to private WETH railgun address.
- * Funds from here move to topup HiddenPayments contract.
+ * Funds from here move to topup HiddenPaymentChannels contract.
  * 1. transform ETH to WETH
  * 2. shield WETH to private railgun address
  */
@@ -71,10 +71,10 @@ export async function shield(
 }
 
 /**
- * Top up the HiddenPayments contract with WETH,
+ * Top up the HiddenPaymentChannels contract with WETH,
  * directly from a railgun address.
  * 1. unshield WETH from the railgun address
- * 2. railgun calls the top_up function on the HiddenPayments contract
+ * 2. railgun calls the top_up function on the HiddenPaymentChannels contract
  * 3. re-shield the WETH to the railgun address
  * @param clearnetWallet
  * @param railgun
@@ -211,14 +211,10 @@ export async function claim_ticket(
     decimals: BigInt(NETWORK_CONFIG.baseToken.decimals),
     isBaseToken: false,
   };
-  const hiddenPaymentsContract = await getHiddenPaymentsContract(
+  const hpcContract = await getHiddenPaymentChannelsContract(
     clearnetWallet.provider as any
   );
-  const step = new ClaimTicketStep(
-    hiddenPaymentsContract,
-    tokenInfo,
-    claimableTicket
-  );
+  const step = new ClaimTicketStep(hpcContract, tokenInfo, claimableTicket);
 
   const output = await step.getValidStepOutput({
     erc20Amounts: [],

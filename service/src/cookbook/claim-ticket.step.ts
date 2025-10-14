@@ -9,13 +9,13 @@ import { ClaimableTicket } from "../types";
 
 export default class ClaimTicketStep extends Step {
   readonly config = {
-    name: "HiddenPayments Claim Ticket",
-    description: "Handles claim ticket call in HiddenPayments contract.",
+    name: "HiddenPaymentChannels Claim Ticket",
+    description: "Handles claim ticket call in HiddenPaymentChannels contract.",
     hasNonDeterministicOutput: false,
   };
 
   constructor(
-    private readonly hiddenPaymentsContract: Contract,
+    private readonly hpcContract: Contract,
     private readonly tokenInfo: RecipeERC20Info,
     private readonly claimableTicket: ClaimableTicket
   ) {
@@ -27,7 +27,7 @@ export default class ClaimTicketStep extends Step {
   ): Promise<UnvalidatedStepOutput> {
     const { nfts } = input;
 
-    const receiverRailGunAddress = await this.hiddenPaymentsContract
+    const receiverRailGunAddress = await this.hpcContract
       .toRailgunAddress()
       .then((hex) => toUtf8String(hex));
     const amount = BigInt(this.claimableTicket.amount);
@@ -43,7 +43,7 @@ export default class ClaimTicketStep extends Step {
     const crossContractCalls: ContractTransaction[] = [];
 
     crossContractCalls.push(
-      await this.hiddenPaymentsContract.claim_ticket.populateTransaction(
+      await this.hpcContract.claim_ticket.populateTransaction(
         amount,
         this.claimableTicket.nonce,
         this.claimableTicket.signature

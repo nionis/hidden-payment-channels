@@ -1,6 +1,6 @@
 {
-  "name": "contracts",
-  "version": "1.0.0",
+  "name": "@hidden-payment-channels/contracts",
+  "version": "0.0.1",
   "type": "module",
   "devDependencies": {
     "@nomicfoundation/hardhat-ethers": "^4.0.2",

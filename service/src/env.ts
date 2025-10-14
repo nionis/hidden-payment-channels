@@ -3,7 +3,7 @@ import {
   NETWORK_CONFIG as ALL_NETWORK_CONFIG,
 } from "@railgun-community/shared-models";
 import { parseEther } from "ethers";
-import ENV from "../../demo/env.json";
+import ENV from "../../demo-data/env.json";
 
 /** our EVM network */
 export const NETWORK = ENV.network! as NetworkName;

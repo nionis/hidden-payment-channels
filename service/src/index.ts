@@ -10,7 +10,7 @@ import {
   getSpendableWethBalance,
   getPendingWethBalance,
 } from "./balances";
-import { getHiddenPaymentsContract, getWethContract } from "./contract";
+import { getHiddenPaymentChannelsContract, getWethContract } from "./contract";
 import {
   MIN_USER_CLEARNET_BALANCE,
   MIN_USER_SHIELDED_BALANCE,
@@ -20,7 +20,7 @@ import {
 import { formatUnits } from "ethers";
 import { PROVIDER, getProviderWallet } from "./provider";
 import { shield, top_up } from "./actions";
-import WALLETS from "../../demo/wallets.json";
+import WALLETS from "../../demo-data/wallets.json";
 import express from "express";
 import cors from "cors";
 import createRoutes from "./routes";
@@ -61,9 +61,8 @@ async function main() {
   // get smart contracts
   const wethContract = await getWethContract(PROVIDER);
   const wethContractAddress = await wethContract.getAddress();
-  const hiddenPaymentsContract = await getHiddenPaymentsContract(PROVIDER);
-  const hiddenPaymentsContractAddress =
-    await hiddenPaymentsContract.getAddress();
+  const hpcContract = await getHiddenPaymentChannelsContract(PROVIDER);
+  const hpcContractAddress = await hpcContract.getAddress();
 
   console.log("----- DEMO WALLETS -----");
   console.log("hostRailgunWallet", hostRailgunWallet.railgunAddress);
@@ -73,7 +72,7 @@ async function main() {
   console.log("userTicketSignerWallet", userTicketSignerWallet.address);
   console.log("----- SMART CONTRACTS -----");
   console.log("wethContract", wethContractAddress);
-  console.log("hiddenPaymentsContract", hiddenPaymentsContractAddress);
+  console.log("hiddenPaymentChannelsContract", hpcContractAddress);
 
   // get balance updates
   setupBalanceCallbacks();
@@ -89,7 +88,7 @@ async function main() {
         hostClearnetWalletBalance: bigint;
         userClearnetWalletBalance: bigint;
         userTicketSignerWalletBalance: bigint;
-        hiddenPaymentsContractBalance: bigint;
+        hiddenPaymentChannelsContractBalance: bigint;
       }
     | undefined;
 
@@ -110,12 +109,12 @@ async function main() {
       hostClearnetWalletBalance,
       userClearnetWalletBalance,
       userTicketSignerWalletBalance,
-      hiddenPaymentsContractBalance,
+      hiddenPaymentChannelsContractBalance,
     ] = await Promise.all([
       PROVIDER.getBalance(hostClearnetWallet.address),
       PROVIDER.getBalance(userClearnetWallet.address),
       wethContract.balanceOf(userTicketSignerWallet.address),
-      wethContract.balanceOf(hiddenPaymentsContractAddress),
+      wethContract.balanceOf(hpcContractAddress),
     ]);
 
     const newBalances = {
@@ -126,7 +125,8 @@ async function main() {
       hostClearnetWalletBalance: hostClearnetWalletBalance,
       userClearnetWalletBalance: userClearnetWalletBalance,
       userTicketSignerWalletBalance: userTicketSignerWalletBalance,
-      hiddenPaymentsContractBalance: hiddenPaymentsContractBalance,
+      hiddenPaymentChannelsContractBalance:
+        hiddenPaymentChannelsContractBalance,
     };
 
     // for (const [name, balance] of Object.entries(newBalances)) {
@@ -154,7 +154,7 @@ async function main() {
   // ensure all wallets have enough balances
   // 1. host & user clearnet wallets
   // 2. user has shielded balance
-  // 3. user has topped up HiddenPayments contract
+  // 3. user has topped up HiddenPaymentChannels contract
 
   // check if user has enough clearnet balance (ETH)
   if (balances.userClearnetWalletBalance < MIN_USER_CLEARNET_BALANCE) {
@@ -183,9 +183,11 @@ async function main() {
   }
   console.log("✅ user's shielded balance is enough");
 
-  // check if user has topped up HiddenPayments contract
-  if (balances.hiddenPaymentsContractBalance < MIN_HIDDEN_PAYMENTS_BALANCE) {
-    console.log("topping up HiddenPayments contract");
+  // check if user has topped up HiddenPaymentChannels contract
+  if (
+    balances.hiddenPaymentChannelsContractBalance < MIN_HIDDEN_PAYMENTS_BALANCE
+  ) {
+    console.log("topping up HiddenPaymentChannels contract");
     await top_up(
       userClearnetWallet,
       {
@@ -196,7 +198,7 @@ async function main() {
       MIN_HIDDEN_PAYMENTS_BALANCE * 10n
     );
   }
-  console.log("✅ HiddenPayments has enough balance");
+  console.log("✅ HiddenPaymentChannels has enough balance");
 
   // check if host has enough clearnet balance (ETH)
   if (balances.hostClearnetWalletBalance < MIN_USER_CLEARNET_BALANCE) {
@@ -214,7 +216,7 @@ async function main() {
   }
   console.log("✅ host's clearnet balance is enough");
 
-  const latestNonce = await hiddenPaymentsContract.lastTicketNonce();
+  const latestNonce = await hpcContract.lastTicketNonce();
 
   console.log("initializing API server");
 
@@ -250,8 +252,8 @@ async function main() {
   app.use(
     "/api",
     createRoutes(
-      hiddenPaymentsContract,
-      hiddenPaymentsContractAddress,
+      hpcContract,
+      hpcContractAddress,
       latestNonce,
       userTicketSignerWallet,
       {
@@ -266,8 +268,8 @@ async function main() {
   // Root endpoint
   app.get("/", (req, res) => {
     res.json({
-      service: "HiddenPayments Service",
-      version: "1.0.0",
+      service: "HiddenPaymentChannels Service",
+      version: "0.0.1",
       status: "running",
     });
   });

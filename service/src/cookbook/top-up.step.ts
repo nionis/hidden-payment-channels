@@ -11,13 +11,13 @@ import {
 
 export default class TopUpStep extends Step {
   readonly config = {
-    name: "HiddenPayments TopUp Call",
-    description: "Handles top_up call to HiddenPayments contract.",
+    name: "HiddenPaymentChannels TopUp Call",
+    description: "Handles top_up call to HiddenPaymentChannels contract.",
     hasNonDeterministicOutput: false,
   };
 
   constructor(
-    private readonly hiddenPaymentsContract: Contract,
+    private readonly hpcContract: Contract,
     private readonly wethContractHelper: ERC20Contract,
     private readonly spender: string,
     private readonly tokenInfo: RecipeERC20Info
@@ -29,8 +29,7 @@ export default class TopUpStep extends Step {
     input: StepInput
   ): Promise<UnvalidatedStepOutput> {
     const { erc20Amounts, nfts } = input;
-    const hiddenPaymentsContractAddress =
-      await this.hiddenPaymentsContract.getAddress();
+    const hpcContractAddress = await this.hpcContract.getAddress();
 
     // validate and select the input ERC20 amount that matches the token and is approved for the relay adapt
     const { unusedERC20Amounts } = this.getValidInputERC20Amount(
@@ -46,23 +45,23 @@ export default class TopUpStep extends Step {
 
     // After unshielding, WETH is already in the Relay Adapt contract (NETWORK_CONFIG.proxyContract)
     // We just need to:
-    // 1. Approve HiddenPayments contract to spend Relay Adapt's WETH
+    // 1. Approve HiddenPaymentChannels contract to spend Relay Adapt's WETH
     // 2. Call top_up, which will pull the WETH using transferFrom
 
     // Use the actual input amount from the previous step (after any fees/deductions)
     const actualAmount = unusedERC20Amounts[0].expectedBalance;
 
-    // 1. Approve HiddenPayments contract to spend relay adapt's WETH.
+    // 1. Approve HiddenPaymentChannels contract to spend relay adapt's WETH.
     crossContractCalls.push(
       await this.wethContractHelper.createSpenderApproval(
-        await this.hiddenPaymentsContract.getAddress(),
+        await this.hpcContract.getAddress(),
         actualAmount
       )
     );
 
-    // 2. Call top_up on HiddenPayments contract (will pull WETH from msg.sender = Relay Adapt).
+    // 2. Call top_up on HiddenPaymentChannels contract (will pull WETH from msg.sender = Relay Adapt).
     crossContractCalls.push(
-      await this.hiddenPaymentsContract.top_up.populateTransaction(actualAmount)
+      await this.hpcContract.top_up.populateTransaction(actualAmount)
     );
 
     // The input amount is fully spent in this step.
@@ -70,7 +69,7 @@ export default class TopUpStep extends Step {
       amount: actualAmount,
       decimals: this.tokenInfo.decimals,
       tokenAddress: this.tokenInfo.tokenAddress,
-      recipient: hiddenPaymentsContractAddress,
+      recipient: hpcContractAddress,
     };
 
     return {

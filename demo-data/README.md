@@ -1,5 +1,7 @@
 # Demo Configuration
 
+These are wallets funded in Sepolia test network for demo purposes.
+
 - [env.json](./env.json)
 - [wallets.json](./wallets.json)
   - contract deployer

@@ -1,13 +1,15 @@
 import { ethers } from "ethers";
-import HiddenPayments from "../../contracts/ignition/deployments/chain-11155111/artifacts/HiddenPaymentsModule#HiddenPayments.json";
+import HiddenPaymentChannels from "../../contracts/ignition/deployments/chain-11155111/artifacts/HiddenPaymentChannelsModule#HiddenPaymentChannels.json";
 import Addresses from "../../contracts/ignition/deployments/chain-11155111/deployed_addresses.json";
 import { NETWORK_CONFIG } from "./env";
 
-// get the HiddenPayments contract instance
-export async function getHiddenPaymentsContract(provider: ethers.Provider) {
+// get the HiddenPaymentChannels contract instance
+export async function getHiddenPaymentChannelsContract(
+  provider: ethers.Provider
+) {
   return new ethers.Contract(
-    Addresses["HiddenPaymentsModule#HiddenPayments"],
-    HiddenPayments.abi,
+    Addresses["HiddenPaymentChannelsModule#HiddenPaymentChannels"],
+    HiddenPaymentChannels.abi,
     provider
   );
 }

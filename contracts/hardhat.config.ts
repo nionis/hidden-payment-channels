@@ -1,7 +1,7 @@
 import type { HardhatUserConfig } from "hardhat/config";
 import hardhatToolboxViemPlugin from "@nomicfoundation/hardhat-toolbox-viem";
-import WALLETS from "../demo/wallets.json";
-import ENV from "../demo/env.json";
+import WALLETS from "../demo-data/wallets.json";
+import ENV from "../demo-data/env.json";
 
 const config: HardhatUserConfig = {
   plugins: [hardhatToolboxViemPlugin],
