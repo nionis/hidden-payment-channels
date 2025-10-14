@@ -2,7 +2,9 @@
 import { FallbackProviderJsonConfig } from "@railgun-community/shared-models";
 import { loadProvider } from "@railgun-community/wallet";
 import { JsonRpcProvider, Wallet } from "ethers";
-import { RPC_URL, NETWORK, NETWORK_CONFIG, CLEARNET_MNEMONIC } from "./env";
+import { RPC_URL, NETWORK, NETWORK_CONFIG } from "./env";
+
+export const PROVIDER = new JsonRpcProvider(RPC_URL);
 
 /**
  * Loads an Engine provider with the specified URL.
@@ -44,12 +46,6 @@ export const getProviderInfo = (providerUrl: string) => {
   };
 };
 
-export const getProviderWallet = () => {
-  const provider = new JsonRpcProvider(RPC_URL);
-  const wallet = Wallet.fromPhrase(CLEARNET_MNEMONIC, provider);
-
-  return {
-    provider,
-    wallet,
-  };
+export const getProviderWallet = (mnemonic: string) => {
+  return new Wallet(Wallet.fromPhrase(mnemonic).privateKey, PROVIDER);
 };

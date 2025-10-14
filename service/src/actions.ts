@@ -56,7 +56,7 @@ export async function shield(
     clearnetWallet
   );
 
-  const { transaction, nullifiers } = await populateShieldBaseToken(
+  const { transaction } = await populateShieldBaseToken(
     TXIDVersion.V2_PoseidonMerkle,
     NETWORK,
     toRailgunAddress,
@@ -66,7 +66,7 @@ export async function shield(
   );
 
   const tx = await clearnetWallet.sendTransaction(transaction);
-  console.log("tx: ", tx);
+  console.log("sending topup transaction");
   await tx.wait();
 }
 
@@ -189,12 +189,11 @@ export async function top_up(
     transactionGasDetails
   );
 
-  console.log("proof of topup done, sending");
+  console.log("proof of topup done, sending tx");
 
   // Submit transaction to RPC.
   const tx = await clearnetWallet.sendTransaction(transaction);
 
-  console.log("tx: ", tx);
   await tx.wait();
 }
 
@@ -291,7 +290,7 @@ export async function claim_ticket(
     overallBatchMinGasPrice,
     minGasLimit,
     (number) => {
-      console.log("proof progress: ", number);
+      console.log("claim ticket proof progress: ", number);
     }
   );
 
@@ -310,10 +309,9 @@ export async function claim_ticket(
     transactionGasDetails
   );
 
-  console.log("proof of withdraw done, sending");
+  console.log("proof of withdraw done, sending tx");
   // Submit transaction to RPC.
   const tx = await clearnetWallet.sendTransaction(transaction);
 
-  console.log("tx: ", tx);
   await tx.wait();
 }

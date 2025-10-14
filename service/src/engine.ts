@@ -11,6 +11,8 @@ import { setRailgunFees } from "@railgun-community/cookbook";
 import { NETWORK } from "./env";
 import { setupNodeGroth16 } from "./prover";
 
+let engineInitialized = false;
+
 export async function start(dataDir: string): Promise<void> {
   console.log("starting railgun engine");
 
@@ -50,9 +52,13 @@ export async function start(dataDir: string): Promise<void> {
   );
   setupNodeGroth16();
 
-  process.on("SIGINT", async (sigint) => {
-    console.log("EXIT DETECTED", sigint);
-    await stopRailgunEngine();
-    process.exit(0);
-  });
+  engineInitialized = true;
+}
+
+export async function stop(): Promise<void> {
+  await stopRailgunEngine();
+}
+
+export function isEngineInitialized(): boolean {
+  return engineInitialized;
 }

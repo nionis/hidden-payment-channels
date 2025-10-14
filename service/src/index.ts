@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import { setLoggers } from "@railgun-community/wallet";
-import { start } from "./engine";
+import { start, stop } from "./engine";
 import { createWallet } from "./wallet";
 import { logger } from "./utils";
 import {
@@ -8,24 +8,25 @@ import {
   runBalancePoller,
   waitForBalancesLoaded,
   getSpendableWethBalance,
+  getPendingWethBalance,
 } from "./balances";
 import { getHiddenPaymentsContract, getWethContract } from "./contract";
-import * as env from "./env";
 import {
-  Wallet,
-  parseEther,
-  formatUnits,
-  keccak256,
-  solidityPackedKeccak256,
-  hexlify,
-  toUtf8Bytes,
-} from "ethers";
-import { getProviderWallet } from "./provider";
-import { shield, top_up, claim_ticket } from "./actions";
-import { Ticket, ClaimableTicket } from "./types";
+  MIN_USER_CLEARNET_BALANCE,
+  MIN_USER_SHIELDED_BALANCE,
+  MIN_HIDDEN_PAYMENTS_BALANCE,
+  PORT,
+} from "./env";
+import { formatUnits } from "ethers";
+import { PROVIDER, getProviderWallet } from "./provider";
+import { shield, top_up } from "./actions";
+import WALLETS from "../../demo/wallets.json";
+import express from "express";
+import cors from "cors";
+import createRoutes from "./routes";
 
 setLoggers(
-  (msg: string) => logger.info("[railgun]", msg),
+  (msg: string) => logger.debug("[railgun]", msg),
   (msg: string) => logger.error("[railgun]", msg)
 );
 
@@ -33,148 +34,282 @@ const CWD_DIR = process.cwd();
 const DATA_DIR = join(CWD_DIR, ".store");
 
 async function main() {
+  // start railgun engine
   await start(DATA_DIR);
 
-  const { provider } = getProviderWallet();
+  // get demo wallets
+  const [
+    hostRailgunWallet,
+    userRailgunWallet,
+    hostClearnetWallet,
+    userClearnetWallet,
+    userTicketSignerWallet,
+  ] = await Promise.all([
+    createWallet(
+      WALLETS["host-railgun"].mnemonic,
+      WALLETS["host-railgun"].encryptionKey
+    ),
+    createWallet(
+      WALLETS["user-railgun"].mnemonic,
+      WALLETS["user-railgun"].encryptionKey
+    ),
+    getProviderWallet(WALLETS["host-clearnet"].mnemonic),
+    getProviderWallet(WALLETS["user-clearnet"].mnemonic),
+    getProviderWallet(WALLETS["user-ticket-signer"].mnemonic),
+  ]);
 
-  const wethContract = await getWethContract(provider);
-  const railgunWallet = await createWallet(
-    env.RAILGUN_MNEMONIC,
-    env.RAILGUN_ENCRYPTION_KEY
-  );
-
-  const hiddenPaymentsContract = await getHiddenPaymentsContract(provider);
+  // get smart contracts
+  const wethContract = await getWethContract(PROVIDER);
+  const wethContractAddress = await wethContract.getAddress();
+  const hiddenPaymentsContract = await getHiddenPaymentsContract(PROVIDER);
   const hiddenPaymentsContractAddress =
     await hiddenPaymentsContract.getAddress();
 
-  const clearnetWallet = new Wallet(
-    Wallet.fromPhrase(env.CLEARNET_MNEMONIC).privateKey,
-    provider
-  );
+  console.log("----- DEMO WALLETS -----");
+  console.log("hostRailgunWallet", hostRailgunWallet.railgunAddress);
+  console.log("userRailgunWallet", userRailgunWallet.railgunAddress);
+  console.log("hostClearnetWallet", hostClearnetWallet.address);
+  console.log("userClearnetWallet", userClearnetWallet.address);
+  console.log("userTicketSignerWallet", userTicketSignerWallet.address);
+  console.log("----- SMART CONTRACTS -----");
+  console.log("wethContract", wethContractAddress);
+  console.log("hiddenPaymentsContract", hiddenPaymentsContractAddress);
 
+  // get balance updates
   setupBalanceCallbacks();
-  runBalancePoller([railgunWallet.railgunId]);
+  runBalancePoller([hostRailgunWallet.railgunId, userRailgunWallet.railgunId]);
   await waitForBalancesLoaded();
 
-  async function printBalances() {
-    console.log(
-      "clearnetWallet ETH",
-      await provider.getBalance(clearnetWallet.address)
-    );
-    console.log(
-      "clearnetWallet WETH",
-      await wethContract.balanceOf(clearnetWallet.address)
-    );
-    console.log("railgun WETH", getSpendableWethBalance().amount);
-  }
+  let balances:
+    | {
+        hostRailgunWalletSpendableBalance: bigint;
+        hostRailgunWalletPendingBalance: bigint;
+        userRailgunWalletSpendableBalance: bigint;
+        userRailgunWalletPendingBalance: bigint;
+        hostClearnetWalletBalance: bigint;
+        userClearnetWalletBalance: bigint;
+        userTicketSignerWalletBalance: bigint;
+        hiddenPaymentsContractBalance: bigint;
+      }
+    | undefined;
 
-  async function shieldToWethToRailgunWallet() {
-    const requiredShieldedWeth = parseEther("0.000001");
-    const pendingShieldedWeth = getSpendableWethBalance().amount;
-    const shieldedWeth = getSpendableWethBalance().amount;
-    const totalShieldedWeth = pendingShieldedWeth + shieldedWeth;
+  async function updateBalances() {
+    const hostRailgunWalletSpendableBalance = getSpendableWethBalance(
+      hostRailgunWallet.railgunId
+    );
+    const hostRailgunWalletPendingBalance = getPendingWethBalance(
+      hostRailgunWallet.railgunId
+    );
+    const userRailgunWalletSpendableBalance = getSpendableWethBalance(
+      userRailgunWallet.railgunId
+    );
+    const userRailgunWalletPendingBalance = getPendingWethBalance(
+      userRailgunWallet.railgunId
+    );
+    const [
+      hostClearnetWalletBalance,
+      userClearnetWalletBalance,
+      userTicketSignerWalletBalance,
+      hiddenPaymentsContractBalance,
+    ] = await Promise.all([
+      PROVIDER.getBalance(hostClearnetWallet.address),
+      PROVIDER.getBalance(userClearnetWallet.address),
+      wethContract.balanceOf(userTicketSignerWallet.address),
+      wethContract.balanceOf(hiddenPaymentsContractAddress),
+    ]);
 
-    if (totalShieldedWeth < shieldedWeth) {
-      console.log(
-        "shielding to railgun wallet",
-        requiredShieldedWeth - shieldedWeth
-      );
-      await shield(
-        clearnetWallet,
-        railgunWallet.railgunAddress,
-        requiredShieldedWeth - shieldedWeth
-      );
+    const newBalances = {
+      hostRailgunWalletSpendableBalance: hostRailgunWalletSpendableBalance,
+      hostRailgunWalletPendingBalance: hostRailgunWalletPendingBalance,
+      userRailgunWalletSpendableBalance: userRailgunWalletSpendableBalance,
+      userRailgunWalletPendingBalance: userRailgunWalletPendingBalance,
+      hostClearnetWalletBalance: hostClearnetWalletBalance,
+      userClearnetWalletBalance: userClearnetWalletBalance,
+      userTicketSignerWalletBalance: userTicketSignerWalletBalance,
+      hiddenPaymentsContractBalance: hiddenPaymentsContractBalance,
+    };
+
+    // for (const [name, balance] of Object.entries(newBalances)) {
+    //   console.log(name, balance);
+    // }
+
+    for (const [name, balance] of Object.entries(newBalances)) {
+      if (balances && balance !== balances[name as keyof typeof balances]) {
+        console.log(
+          `👀 ${name} balance changed:`,
+          balance - balances[name as keyof typeof balances]
+        );
+      }
     }
 
-    await waitForBalancesLoaded();
-    console.log("railgunWallet WETH: ", getSpendableWethBalance());
+    balances = newBalances;
+  }
+  await updateBalances();
+  setInterval(updateBalances, 10000);
+
+  if (!balances) {
+    throw Error("could not load balances");
   }
 
-  async function topupHiddenPayments() {
+  // ensure all wallets have enough balances
+  // 1. host & user clearnet wallets
+  // 2. user has shielded balance
+  // 3. user has topped up HiddenPayments contract
+
+  // check if user has enough clearnet balance (ETH)
+  if (balances.userClearnetWalletBalance < MIN_USER_CLEARNET_BALANCE) {
+    const err = [
+      `user clearnet (ETH) balance is less than the minimum required: ${balances.userClearnetWalletBalance} < ${MIN_USER_CLEARNET_BALANCE}`,
+      `wallet address: ${userClearnetWallet.address}`,
+      `balance: ${formatUnits(balances.userClearnetWalletBalance, 18)}`,
+      `minimum required: ${formatUnits(MIN_USER_CLEARNET_BALANCE, 18)}`,
+      `suggested: top up with ${formatUnits(
+        MIN_USER_CLEARNET_BALANCE * 10n,
+        18
+      )} ETH`,
+    ];
+    throw Error(err.join("\n"));
+  }
+  console.log("✅ user's clearnet balance is enough");
+
+  // check if user has enough shielded balance
+  if (balances.userRailgunWalletSpendableBalance < MIN_USER_SHIELDED_BALANCE) {
+    console.log("adding funds to user's shielded balance");
+    await shield(
+      userClearnetWallet,
+      userRailgunWallet.railgunAddress,
+      MIN_USER_SHIELDED_BALANCE * 10n
+    );
+  }
+  console.log("✅ user's shielded balance is enough");
+
+  // check if user has topped up HiddenPayments contract
+  if (balances.hiddenPaymentsContractBalance < MIN_HIDDEN_PAYMENTS_BALANCE) {
+    console.log("topping up HiddenPayments contract");
     await top_up(
-      clearnetWallet,
+      userClearnetWallet,
       {
-        id: railgunWallet.railgunId,
-        address: railgunWallet.railgunAddress,
-        encryptionKey: railgunWallet.encryptionKey!,
+        id: userRailgunWallet.railgunId,
+        address: userRailgunWallet.railgunAddress,
+        encryptionKey: userRailgunWallet.encryptionKey!,
       },
-      parseEther("0.0000001")
+      MIN_HIDDEN_PAYMENTS_BALANCE * 10n
     );
   }
+  console.log("✅ HiddenPayments has enough balance");
 
-  async function claimTickets() {
-    const ticket: Ticket = {
-      toRailgunAddress:
-        "0zk1qy3sg6rnd24935jd9qs4lzmfhfl6sag0udlx35s48sm3hl0c8d83prv7j6fe3z53lajrmeetnfrx7p6fmwcsxkgctc6er9a6a24mcw4mdvcd6jraucxnce3nvan",
-      nonce: 7n,
-      amount: parseEther("0.00000000000009"),
-      hiddenPaymentsAddress: hiddenPaymentsContractAddress,
-    };
-    const signingWallet = Wallet.fromPhrase(
-      "rifle elder resource famous border snow artefact symbol taxi among cash extra"
-    );
-
-    // Construct the message hash exactly as the contract does:
-    // keccak256(abi.encodePacked(keccak256(toRailgunAddress), amount, nonce, address(this)))
-    const messageHash = solidityPackedKeccak256(
-      ["bytes32", "uint256", "uint256", "address"],
-      [
-        keccak256(toUtf8Bytes(ticket.toRailgunAddress)),
-        ticket.amount,
-        ticket.nonce,
-        ticket.hiddenPaymentsAddress,
-      ]
-    );
-
-    // Sign without the Ethereum signed message prefix
-    const signature = signingWallet.signingKey.sign(messageHash);
-    const compactSignature = hexlify(
-      signature.r +
-        signature.s.slice(2) +
-        signature.v.toString(16).padStart(2, "0")
-    );
-
-    const claimableTicket: ClaimableTicket = {
-      ...ticket,
-      signature: compactSignature,
-    };
-
-    await claim_ticket(
-      clearnetWallet,
-      {
-        id: railgunWallet.railgunId,
-        address: railgunWallet.railgunAddress,
-        encryptionKey: railgunWallet.encryptionKey!,
-      },
-      claimableTicket
-    );
+  // check if host has enough clearnet balance (ETH)
+  if (balances.hostClearnetWalletBalance < MIN_USER_CLEARNET_BALANCE) {
+    const err = [
+      `host clearnet (ETH) balance is less than the minimum required: ${balances.hostClearnetWalletBalance} < ${MIN_USER_CLEARNET_BALANCE}`,
+      `wallet address: ${hostClearnetWallet.address}`,
+      `balance: ${formatUnits(balances.hostClearnetWalletBalance, 18)}`,
+      `minimum required: ${formatUnits(MIN_USER_CLEARNET_BALANCE, 18)}`,
+      `suggested: top up with ${formatUnits(
+        MIN_USER_CLEARNET_BALANCE * 10n,
+        18
+      )} ETH`,
+    ];
+    throw Error(err.join("\n"));
   }
+  console.log("✅ host's clearnet balance is enough");
 
-  // wait until we have shielded balance
-  while (true) {
-    const shieldedWeth = getSpendableWethBalance().amount;
-    if (shieldedWeth > parseEther("0.0000001")) {
-      break;
+  const latestNonce = await hiddenPaymentsContract.lastTicketNonce();
+
+  console.log("initializing API server");
+
+  const app = express();
+
+  // Middleware
+  app.use(cors());
+  app.use(express.json({ limit: "10mb" }));
+
+  // Request logging
+  app.use((req, res, next) => {
+    logger.info(`${req.method} ${req.path}`);
+    next();
+  });
+
+  // Error handler
+  app.use(
+    (
+      err: any,
+      req: express.Request,
+      res: express.Response,
+      next: express.NextFunction
+    ) => {
+      logger.error("Unhandled error:", err);
+      res.status(500).json({
+        error: "Internal server error",
+        details: err.message,
+      });
     }
-    await printBalances();
-    await new Promise((resolve) => setTimeout(resolve, 5000));
-  }
-
-  // console.log("we have shielded balance");
-
-  const totalFunded = await hiddenPaymentsContract.totalAmountFunded();
-  const totalWithdrawn = await hiddenPaymentsContract.totalAmountWithdrawn();
-  console.log(
-    "Total Amount in HiddenPayments:",
-    formatUnits(totalFunded - totalWithdrawn),
-    "WETH"
   );
 
-  // await topupHiddenPayments();
-  // await claimTickets();
+  // API routes
+  app.use(
+    "/api",
+    createRoutes(
+      hiddenPaymentsContract,
+      hiddenPaymentsContractAddress,
+      latestNonce,
+      userTicketSignerWallet,
+      {
+        id: hostRailgunWallet.railgunId,
+        address: hostRailgunWallet.railgunAddress,
+        encryptionKey: hostRailgunWallet.encryptionKey!,
+      },
+      hostClearnetWallet
+    )
+  );
+
+  // Root endpoint
+  app.get("/", (req, res) => {
+    res.json({
+      service: "HiddenPayments Service",
+      version: "1.0.0",
+      status: "running",
+    });
+  });
+
+  // Start Express server
+  app.listen(PORT, () => {
+    logger.info("=================================================");
+    logger.info(`Server running on http://localhost:${PORT}`);
+    logger.info("API endpoints:");
+    logger.info("  GET  /api/hidden-payments/available-funds (used by host)");
+    logger.info("  POST /api/ticket/generate (used by user)");
+    logger.info("  POST /api/ticket/validate (used by host)");
+    logger.info("  POST /api/ticket/claim (used by host)");
+    logger.info("=================================================");
+  });
 }
 
 main().catch((err) => {
   console.error("error", err);
-  process.exit(1);
+  stop();
+  process.exit(0);
+});
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  logger.info("Received SIGINT, shutting down gracefully...");
+  try {
+    await stop();
+    logger.info("Graceful shutdown complete");
+  } catch (error) {
+    logger.error("Error during shutdown:", error);
+  }
+  process.exit(0);
+});
+
+process.on("SIGTERM", async () => {
+  logger.info("Received SIGTERM, shutting down gracefully...");
+  try {
+    await stop();
+    logger.info("Graceful shutdown complete");
+  } catch (error) {
+    logger.error("Error during shutdown:", error);
+  }
+  process.exit(0);
 });

@@ -14,6 +14,7 @@ import {
 } from "@railgun-community/shared-models";
 import { getAddress } from "ethers";
 import { NETWORK_CONFIG } from "./env";
+import { logger } from "./utils";
 
 const BALANCE_POLLER_INTERVAL = 1000 * 60 * 1; // 1 min
 
@@ -29,7 +30,7 @@ const BALANCE_POLLER_INTERVAL = 1000 * 60 * 1; // 1 min
 const onUTXOMerkletreeScanCallback = (eventData: MerkletreeScanUpdateEvent) => {
   // Will get called throughout a private balance scan.
   // Handle updates on scan progress and status here, i.e. progress bar or loading indicator in the UI.
-  console.log("UTXO scan update:", eventData.progress, eventData.scanStatus);
+  logger.debug("UTXO scan update:", eventData.progress, eventData.scanStatus);
 };
 
 /**
@@ -44,7 +45,7 @@ const onUTXOMerkletreeScanCallback = (eventData: MerkletreeScanUpdateEvent) => {
 const onTXIDMerkletreeScanCallback = (eventData: MerkletreeScanUpdateEvent) => {
   // Will get called throughout a private balance scan.
   // Handle updates on scan progress and status here, i.e. progress bar or loading indicator in the UI.
-  console.log("TXID scan update:", eventData.progress, eventData.scanStatus);
+  logger.debug("TXID scan update:", eventData.progress, eventData.scanStatus);
 };
 
 /**
@@ -89,11 +90,15 @@ const onBalanceUpdateCallback = (balancesFormatted: RailgunBalancesEvent) => {
   // they will automatically end up in the "Spendable" category, which is when they are
   // able to be used in private DeFi interactions.
   // Handle updates on the private token balances of each available RAILGUN wallet here.
-  console.log("Balances updated:", balancesFormatted.balanceBucket);
+  logger.debug("Balances updated:", balancesFormatted.balanceBucket);
   if (balancesFormatted.erc20Amounts.length > 0) {
-    console.log("ERC20 Balances: ", balancesFormatted.erc20Amounts);
+    logger.debug("ERC20 Balances: ", balancesFormatted.erc20Amounts);
   }
-  balanceCache.set(balancesFormatted.balanceBucket, balancesFormatted);
+
+  const balanceCacheWallet =
+    balanceCache.get(balancesFormatted.railgunWalletID) || new Map();
+  balanceCacheWallet.set(balancesFormatted.balanceBucket, balancesFormatted);
+  balanceCache.set(balancesFormatted.railgunWalletID, balanceCacheWallet);
 };
 
 /**
@@ -138,16 +143,16 @@ export const runBalancePoller = async (walletIds: string[]) => {
   // It will also call the onBalanceUpdateCallback when the scan is complete.
 
   const chain = NETWORK_CONFIG.chain;
-  console.log("Running balance poller... on chain", chain);
+  logger.info("Running balance poller... on chain", chain);
   try {
     // scan for all wallets.
 
     await refreshBalances(chain, walletIds);
   } catch (error) {
-    console.error("BALANCE REFRESH ERROR", error);
+    logger.error("BALANCE REFRESH ERROR", error);
     await refreshBalances(chain, walletIds);
   }
-  console.log("Balance poller complete. Waiting for next poll...");
+  logger.info("Balance poller complete. Waiting for next poll...");
   if (balanceLoadedPromise != null) {
     balanceLoadedPromise("Loaded Balances");
     balanceLoadedPromise = undefined;
@@ -181,63 +186,40 @@ export const waitForBalancesLoaded = async () => {
  * The cache helps reduce redundant balance lookups by storing the most recent balance events for each wallet bucket.
  */
 export const balanceCache = new Map<
-  RailgunWalletBalanceBucket,
-  RailgunBalancesEvent
+  string,
+  Map<RailgunWalletBalanceBucket, RailgunBalancesEvent>
 >();
 
-/**
- * Retrieves the spendable balances from the balance cache.
- *
- * This function accesses the RAILGUN wallet's spendable balances from the cache.
- * Spendable balances are funds that are available for immediate use in transactions.
- *
- * @returns {Object} The spendable balances retrieved from the balance cache.
- *
- * @example
- * const balances = getSpendableBalances();
- * console.log(balances);
- */
-export const getSpendableBalances = () => {
-  return balanceCache.get(RailgunWalletBalanceBucket.Spendable);
-};
-
-export function getSpendableWethBalance(): RailgunERC20Amount {
+export function getSpendableWethBalance(walletId: string): bigint {
   return (
     balanceCache
-      .get(RailgunWalletBalanceBucket.Spendable)
+      .get(walletId)
+      ?.get(RailgunWalletBalanceBucket.Spendable)
       ?.erc20Amounts.find((erc20Amount) => {
         return (
           getAddress(erc20Amount.tokenAddress) ===
           getAddress(NETWORK_CONFIG.baseToken.wrappedAddress)
         );
       }) ?? {
-      tokenAddress: NETWORK_CONFIG.baseToken.wrappedAddress,
+      tokenAddress: getAddress(NETWORK_CONFIG.baseToken.wrappedAddress),
       amount: 0n,
     }
-  );
+  ).amount;
 }
 
-/**
- * Displays the spendable balances of ERC20 tokens available to the wallet.
- *
- * This function retrieves spendable balances using the `getSpendableBalances()` function
- * and logs each ERC20 token balance to the console. If no balances are found,
- * it logs a message indicating that no spendable balances were found.
- *
- * @example
- * // Display all spendable token balances in the wallet
- * displaySpendableBalances();
- *
- * @returns {void}
- */
-export const displaySpendableBalances = () => {
-  const balances = getSpendableBalances();
-
-  if (balances) {
-    for (const erc20Amount of balances.erc20Amounts) {
-      console.log("ERC20 Balance: ", erc20Amount);
+export function getPendingWethBalance(walletId: string): bigint {
+  return (
+    balanceCache
+      .get(walletId)
+      ?.get(RailgunWalletBalanceBucket.ShieldPending)
+      ?.erc20Amounts.find((erc20Amount) => {
+        return (
+          getAddress(erc20Amount.tokenAddress) ===
+          getAddress(NETWORK_CONFIG.baseToken.wrappedAddress)
+        );
+      }) ?? {
+      tokenAddress: getAddress(NETWORK_CONFIG.baseToken.wrappedAddress),
+      amount: 0n,
     }
-  } else {
-    console.log("No spendable balances found.");
-  }
-};
+  ).amount;
+}

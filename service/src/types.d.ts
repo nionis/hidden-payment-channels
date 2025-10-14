@@ -10,7 +10,7 @@ export interface Ticket {
   toRailgunAddress: string;
   nonce: bigint;
   amount: bigint;
-  hiddenPaymentsAddress: string;
+  hiddenPaymentsContractAddress: string;
 }
 
 export interface ClaimableTicket extends Ticket {

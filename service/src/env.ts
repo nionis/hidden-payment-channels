@@ -2,8 +2,8 @@ import {
   NetworkName,
   NETWORK_CONFIG as ALL_NETWORK_CONFIG,
 } from "@railgun-community/shared-models";
+import { parseEther } from "ethers";
 import ENV from "../../demo/env.json";
-import WALLETS from "../../demo/wallets.json";
 
 /** our EVM network */
 export const NETWORK = ENV.network! as NetworkName;
@@ -23,6 +23,9 @@ if (!RPC_URL) {
   throw new Error("RPC_URL is not set");
 }
 
-export const RAILGUN_MNEMONIC = WALLETS["host-railgun"].mnemonic;
-export const RAILGUN_ENCRYPTION_KEY = WALLETS["host-railgun"].encryptionKey;
-export const CLEARNET_MNEMONIC = WALLETS["host-clearnet"].mnemonic;
+export const PORT = process.env.PORT || 8080;
+
+export const MIN_USER_CLEARNET_BALANCE = parseEther("0.00001");
+export const MIN_USER_SHIELDED_BALANCE = parseEther("0.0000001");
+export const MIN_HIDDEN_PAYMENTS_BALANCE = parseEther("0.00000001");
+export const TICKET_COST = parseEther("0.0000000003");
