@@ -3,6 +3,7 @@ import {
   NETWORK_CONFIG as ALL_NETWORK_CONFIG,
 } from "@railgun-community/shared-models";
 import ENV from "../../demo/env.json";
+import WALLETS from "../../demo/wallets.json";
 
 /** our EVM network */
 export const NETWORK = ENV.network! as NetworkName;
@@ -21,3 +22,7 @@ export const RPC_URL = ENV.rpcUrl!;
 if (!RPC_URL) {
   throw new Error("RPC_URL is not set");
 }
+
+export const RAILGUN_MNEMONIC = WALLETS["host-railgun"].mnemonic;
+export const RAILGUN_ENCRYPTION_KEY = WALLETS["host-railgun"].encryptionKey;
+export const CLEARNET_MNEMONIC = WALLETS["host-clearnet"].mnemonic;

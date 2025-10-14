@@ -1,9 +1,9 @@
+// copied from railgun-community/wallet
 import { FallbackProviderJsonConfig } from "@railgun-community/shared-models";
 import { loadProvider } from "@railgun-community/wallet";
 import { JsonRpcProvider, Wallet } from "ethers";
 import { RPC_URL, NETWORK, NETWORK_CONFIG, CLEARNET_MNEMONIC } from "./env";
 
-// forked function, replace with your own provider
 /**
  * Loads an Engine provider with the specified URL.
  *

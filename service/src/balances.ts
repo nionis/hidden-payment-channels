@@ -1,3 +1,4 @@
+// copied from railgun-community/wallet
 import {
   setOnUTXOMerkletreeScanCallback,
   setOnTXIDMerkletreeScanCallback,
@@ -13,9 +14,6 @@ import {
 } from "@railgun-community/shared-models";
 import { getAddress } from "ethers";
 import { NETWORK_CONFIG } from "./env";
-
-import dotenv from "dotenv";
-dotenv.config();
 
 const BALANCE_POLLER_INTERVAL = 1000 * 60 * 1; // 1 min
 

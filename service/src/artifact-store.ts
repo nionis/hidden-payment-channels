@@ -1,3 +1,4 @@
+// copied from railgun-community/wallet
 import { ArtifactStore } from "@railgun-community/wallet";
 import fs from "fs";
 

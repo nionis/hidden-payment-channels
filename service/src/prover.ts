@@ -1,3 +1,4 @@
+// copied from railgun-community/wallet
 import { getProver, SnarkJSGroth16 } from "@railgun-community/wallet";
 import { groth16 } from "snarkjs";
 

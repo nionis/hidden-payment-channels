@@ -70,6 +70,16 @@ export async function shield(
   await tx.wait();
 }
 
+/**
+ * Top up the HiddenPayments contract with WETH,
+ * directly from a railgun address.
+ * 1. unshield WETH from the railgun address
+ * 2. railgun calls the top_up function on the HiddenPayments contract
+ * 3. re-shield the WETH to the railgun address
+ * @param clearnetWallet
+ * @param railgun
+ * @param amount
+ */
 export async function top_up(
   clearnetWallet: Wallet,
   railgun: {
@@ -94,8 +104,6 @@ export async function top_up(
     },
   ];
 
-  console.log("unshieldERC20Amounts", unshieldERC20Amounts);
-
   const recipeInput: RecipeInput = {
     networkName: NETWORK as any,
     railgunAddress: railgun.address,
@@ -111,14 +119,11 @@ export async function top_up(
     minGasLimit,
   } = await recipe.getRecipeOutput(recipeInput);
 
-  // Outputs to re-shield after the Recipe multicall.
+  // outputs to re-shield after the Recipe multicall.
   const shieldERC20Addresses = erc20AmountRecipients.map((x) => ({
     tokenAddress: x.tokenAddress,
     recipientAddress: x.recipient,
   }));
-
-  // RAILGUN Wallet will generate a [unshield -> call -> re-shield]
-  // transaction enclosing the Recipe multicall.
 
   const originalGasDetails = await getOriginalGasDetailsForTransaction(
     clearnetWallet,
@@ -185,6 +190,7 @@ export async function top_up(
   );
 
   console.log("proof of topup done, sending");
+
   // Submit transaction to RPC.
   const tx = await clearnetWallet.sendTransaction(transaction);
 

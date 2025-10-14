@@ -3,6 +3,7 @@ import HiddenPayments from "../../contracts/ignition/deployments/chain-11155111/
 import Addresses from "../../contracts/ignition/deployments/chain-11155111/deployed_addresses.json";
 import { NETWORK_CONFIG } from "./env";
 
+// get the HiddenPayments contract instance
 export async function getHiddenPaymentsContract(provider: ethers.Provider) {
   return new ethers.Contract(
     Addresses["HiddenPaymentsModule#HiddenPayments"],
@@ -11,8 +12,8 @@ export async function getHiddenPaymentsContract(provider: ethers.Provider) {
   );
 }
 
+// get the WETH contract instance
 export async function getWethContract(provider: ethers.Provider) {
-  console.log("addr", NETWORK_CONFIG.baseToken.wrappedAddress);
   return new ethers.Contract(
     NETWORK_CONFIG.baseToken.wrappedAddress,
     [

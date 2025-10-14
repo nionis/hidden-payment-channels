@@ -19,7 +19,6 @@ import {
   solidityPackedKeccak256,
   hexlify,
   toUtf8Bytes,
-  Signature,
 } from "ethers";
 import { getProviderWallet } from "./provider";
 import { shield, top_up, claim_ticket } from "./actions";
@@ -172,7 +171,7 @@ async function main() {
   );
 
   // await topupHiddenPayments();
-  await claimTickets();
+  // await claimTickets();
 }
 
 main().catch((err) => {

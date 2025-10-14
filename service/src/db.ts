@@ -1,4 +1,4 @@
-// Setup for Node builds.
+// copied from railgun-community/wallet
 import LevelDownDB from "leveldown";
 
 /**
