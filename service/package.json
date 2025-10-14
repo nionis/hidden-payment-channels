@@ -1,0 +1,30 @@
+{
+  "name": "@hidden-payments/railgun",
+  "version": "0.0.1",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.3",
+    "@types/leveldown": "^4.0.6",
+    "@types/node": "^22.8.5",
+    "@types/snarkjs": "^0.7.5",
+    "ts-node": "^10.9.2",
+    "typescript": "~5.8.0"
+  },
+  "dependencies": {
+    "@railgun-community/cookbook": "2.6.0",
+    "@railgun-community/shared-models": "7.6.1",
+    "@railgun-community/wallet": "10.4.0",
+    "cors": "^2.8.5",
+    "ethers": "^6.15.0",
+    "express": "^5.1.0",
+    "leveldown": "^6.1.1",
+    "snarkjs": "^0.7.5"
+  }
+}

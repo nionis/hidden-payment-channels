@@ -1,0 +1,18 @@
+export interface RailgunWallet {
+  railgunId: string;
+  railgunAddress: string;
+  publicViewingKey: string;
+  mnemonic?: string;
+  encryptionKey?: string;
+}
+
+export interface Ticket {
+  toRailgunAddress: string;
+  nonce: bigint;
+  amount: bigint;
+  hiddenPaymentsAddress: string;
+}
+
+export interface ClaimableTicket extends Ticket {
+  signature: string;
+}

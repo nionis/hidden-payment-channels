@@ -1,0 +1,34 @@
+{
+  "contract-deployer": {
+    "privateKey": "0xa6eda09164fa26a977f3bf090e9733f5db2c53d5fdd02ea1e49bfc4707844223"
+  },
+  "host-railgun": {
+    "mnemonic": "rose laugh damage follow quick funny atom sausage sure feature reflect mixture",
+    "encryptionKey": "2cb2a10317e6a681c56a79150f2650319639e34edfd53e3188f13af30f33ffa3",
+    "railgunId": "e47714e9c600015b978e26b3f665fef0054b5338deb90b8c15de8a56a2fdb6ba",
+    "railgunAddress": "0zk1qy3sg6rnd24935jd9qs4lzmfhfl6sag0udlx35s48sm3hl0c8d83prv7j6fe3z53lajrmeetnfrx7p6fmwcsxkgctc6er9a6a24mcw4mdvcd6jraucxnce3nvan",
+    "publicViewingKey": "82a57670726976d94030333966646662666136613230343763653765306630393833623233643330333931373036396536303032653532336462316330613830626334643231656265a473707562d94065383631343961336334636338313930343337346366373335653331393534363366623030323637623861303035616335636630396430393662366336326166"
+  },
+  "host-clearnet": {
+    "mnemonic": "private blouse frame execute only web slush earn find skin rocket decorate",
+    "privateKey": "0xd5ad5f565f41df775289e7e359aab5fc5a265b7b4352ed7e50e913325fb0aaad",
+    "address": "0x33e1407fEa73faaC1F1A5a5E29CB66Fe0D01B350"
+  },
+  "user-railgun": {
+    "mnemonic": "regret middle ten ahead above creek rug brick clay airport disagree nose",
+    "encryptionKey": "dbbe63054232361e646739c725feac2d767fb954359b1528a7f63237c6080726",
+    "railgunId": "30e4b4025e12683a82158036dc152bd2838169e5251a2c3000d12d328cbf1671",
+    "railgunAddress": "0zk1qyqcccc6nacm966mjdmzyref0km5yj2puxxf52sn2ak65qw823wdprv7j6fe3z53l7mkl5ncta3x8uy8353mwxqgj3qd29w6pmktc649tjkgkakc2aexy04vnfc",
+    "publicViewingKey": "82a57670726976d94039623137303534663530376463313065393863626632333065306439373732613062643933366436646162353636386337326463393234633536613064346232a473707562d94030356531343065343336303831663333346236363661336130326138373235316566633035643634376134363031313539373365313338376164646636303033"
+  },
+  "user-clearnet": {
+    "mnemonic": "snap blade junk cancel punch angle key devote hole item elephant labor",
+    "privateKey": "0x3f6dda1aa05ad2d689895e14825c65d5017ab62d961be943317bb169c7d67e79",
+    "address": "0xD378aee5f63eB2dC2295A560F8E2d15f232b3D75"
+  },
+  "user-ticket-signer": {
+    "mnemonic": "rifle elder resource famous border snow artefact symbol taxi among cash extra",
+    "privateKey": "0xfb0c2d96c4de7d41c1161f636c57e1339cffcd988585c56ba2f93c01e6dd644a",
+    "address": "0xeDA25F9793E4986E99fccE4158672bF0111a73cA"
+  }
+}
