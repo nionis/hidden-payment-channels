@@ -6,6 +6,9 @@ Currently, the Hidden Payment Channels service is implement as a restful API as 
 
 The core functionality will be split into a seperate SDK later on.
 
+This is a submission for the [RealFi Hack Funding the Commons](https://realfi-hack.devspot.app/en?activeTab=overview) hackathon.
+If you are a judge start here [Submission Details](#submission-details).
+
 ## Overview
 
 Scenario: Bob is an RPC provider and wants to offer his RPC service to others.
@@ -79,6 +82,11 @@ hidden-payment-channels/
 
 **This project is currently configured for demonstration purposes only.** Private keys are hardcoded using demo wallets from the `/demo-data` directory. **Do not use in production** without proper key management and security measures.
 
+## For Maximum Privacy
+
+- user must fund their railgun wallet and wait at least an hour before starting to issue tickets
+- railgun RPC requests, and other HTTP traffic should be send through TOR or a mixnet
+
 ## Known Issues
 
 - [hpc-service](./service/) is currently purely set up in demo mode, participating parties have their wallets predefined in [demo-data](./demo-data/)
@@ -86,8 +94,6 @@ hidden-payment-channels/
 - we currently do not use broadcasters in railgun, this exposes some meta data leakage
 - ticket tracking is on memory, this is useful for a DEMO as it allows us to start with a clean slate every time, not useful in production
 - smart contracts are probably badly written
-- for maximum privacy: user must fund their railgun wallet and wait at least an hour before starting to issue tickets
-- for maximum privacy: railgun RPC requests, and other HTTP traffic should be send through TOR or a mixnet
 
 ## Roadmap
 
@@ -106,3 +112,29 @@ hidden-payment-channels/
 - switch to probabilistic tickets
 - track tickets in a local DB
 - option to tunnel all railgun traffic through a socks5 proxy
+
+## Submission Details
+
+I've worked on two projects [Hidden Payment Channels](./service/) and [Tor Provider](./examples/tor-provider/). TorProvider _uses_ HiddenPaymentChannels to facilitate private payments.
+
+In short, one is a service that allows for private payments across user and service, and the other is a real product (serving RPC traffic over TOR) which uses it.
+
+Reading this README.md should give you enough insight on what these projects do and how they differ.
+
+**Q: Which bounty (or combination) you selected?**
+
+**A:** Logos x Tor: Privacy Infrastructure, focusing on
+
+    - Private RPC Node Network
+    - Incentivized Private RPC Nodes
+    - Private Paymaster Transactions with Onion Routing
+
+However, more accurately, this submission represents _Private Micropayments_
+
+**Q: Design choices, privacy guarantees, and limitations**
+
+**A:** Answered in this [README.md](#overview)
+
+**Q: How Tor (or similar networks) is integrated**
+
+**A:** [TOR's Arti](https://gitlab.torproject.org/tpo/core/arti) is used in [tor-provider](./examples/tor-provider/) alongside [hpc-service](./service/) to host a hidden service, proxy RPC requests, generate and validate payment tickets.
