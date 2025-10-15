@@ -135,10 +135,12 @@ export default function createRoutes(
     async (req: Request, res: Response) => {
       try {
         const unclaimedTickets = userNonce - hostNonce;
+        // only once the user claims a ticket, the nonce should be incremented
+        const newNonce = userNonce === 0n ? userNonce + 1n : userNonce;
 
         const ticket: Ticket = {
           toRailgunAddress: hostRailgunInfo.address,
-          nonce: ++userNonce,
+          nonce: newNonce,
           amount: TICKET_COST + TICKET_COST * unclaimedTickets,
           hiddenPaymentChannelsContractAddress: hpcContractAddress,
         };
