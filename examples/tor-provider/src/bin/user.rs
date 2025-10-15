@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
     let listener = TcpListener::bind(&config.listen_addr).await?;
     info!("server listening on {}", config.listen_addr);
     info!(
-        "add this to your wallet: http://{}/?p=https://sepolia.infura.io/v3/44789551485a4519bb4b1c2909f410d5",
+        "add this to your wallet: http://{}/?p=https://ethereum-sepolia-rpc.publicnode.com",
         config.listen_addr
     );
 
