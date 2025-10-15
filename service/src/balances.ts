@@ -16,7 +16,7 @@ import { getAddress } from "ethers";
 import { NETWORK_CONFIG } from "./env";
 import { logger } from "./utils";
 
-const BALANCE_POLLER_INTERVAL = 1000 * 60 * 1; // 1 min
+const BALANCE_POLLER_INTERVAL = 1000 * 60 * 2; // 2 min
 
 /**
  * Example Callback function that gets invoked during a private balance scan process.
