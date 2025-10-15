@@ -11,7 +11,7 @@ If you are a judge start here [Submission Details](#submission-details).
 
 ## Overview
 
-<!-- insert video -->
+I suggest you read this overview and then watch any of these videos: [with voice](https://youtu.be/ivVgxnIoa3k), [no voice](https://youtu.be/dswG4I_NGLs)
 
 Scenario: Bob is an RPC provider and wants to offer his RPC service to others.
 He wants to be paid **privately** and offer the service **anonymously**.
@@ -40,7 +40,15 @@ She needs a way to access it and pay for it.
 
 Result: Alice can use the hidden RPC service, she pays with micropayments using tickets
 
-In these extreme scenarios, both parties may want to be completely private, you can use HiddenPaymentChannels without TOR.
+In these extreme scenarios, both parties may want to be completely private, you can use HiddenPaymentChannels _without TOR_.
+
+You may also use HiddenPaymentChannels to only hide the amount you are paying, and not necesarily that you are paying.
+
+Out of the box, in order to optimise for maximum privacy, both Alice and Bob should do the following:
+
+- Alice & Bob: run railgun service over TOR - this is easy to do but the DEMO right now does not do it
+- Alice & Bob: fund their railgun wallets and wait a sometime before start using HiddenPaymentChannels
+- HiddenPaymentChannels: should leverage broadcasters, does not do it right now
 
 ```mermaid
 graph LR
