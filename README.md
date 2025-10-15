@@ -1,1 +1,108 @@
-# TODO
+# Hidden Payment Channels
+
+A privacy-preserving payment system that combines **[railgun](https://github.com/Railgun-Community/wallet)** and **payment channels** to enable efficient and private billing of services.
+
+Currently, the Hidden Payment Channels service is implement as a restful API as it is easier to demonstrate the proof of concept.
+
+The core functionality will be split into a seperate SDK later on.
+
+## Overview
+
+Scenario: Bob is an RPC provider and wants to offer his RPC service to others.
+He wants to be paid **privately** and offer the service **anonymously**.
+**Nothing** should link back to him.
+
+1. Bob runs a [Nimbus client](https://github.com/status-im/nimbus-eth1) at http://localhost:9545
+2. Bob runs a [HPC host service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
+3. Bob runs a client that uses HPC service, for example [tor-provider-host](./examples/tor-provider/)
+
+   1. `tor-provider-host` will launch a hidden service (http://xyz.onion)
+   2. will proxy all traffic to the `Nimbus client`
+   3. will look for payment tickets
+
+Result: a URL (http://xyz.onion) that serves RPC traffic and requires payment tickets attached to the headers of the request
+
+Scenario: Alice wants to access a premium, dedicated RPC provider **privately**.
+She needs a way to access it and pay for it.
+
+1. Alice runs [HPC user service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
+2. Alice sends shielded funds to the her `HPC user service` railgun wallet
+3. Alice runs [tor-provider-user](./examples/tor-provider/)
+
+   1. `tor-provider-user` will launch a proxy waiting to receive RPC requests at http://localhost:8545
+   2. she finds Bob's onion service (http://xyz.onion) (TODO: announce via smart contract)
+   3. adds the RPC url into her wallet (http://localhost:8545/?p=http://xyz.onion)
+
+In these extreme scenarios, both parties may want to be completely private, you can use HiddenPaymentChannels without TOR.
+
+## Architecture
+
+The system consists of four main components:
+
+### 1. **Smart Contracts** (`/contracts`)
+
+- **HiddenPaymentChannels.sol**: A vault-like contract that accepts shielded WETH deposits
+- Only one designated Railgun address can claim funds using payment tickets
+- Anyone can top up the contract with shielded funds, but only the assigned railgun address can withdraw
+
+### 2. **Service Layer** (`/service`)
+
+- RESTful API that exposes Hidden Payment Channels core functionality
+- Handles ticket generation, validation, and claiming
+- Manages shielded wallet operations and fund tracking
+
+### 3. **Demo Infrastructure** (`/demo-data`)
+
+- Pre-configured wallets for demonstration purposes
+- Funded Sepolia testnet accounts for testing
+- Environment configuration for development
+
+### 4. **Example Implementation** (`/examples/tor-provider`)
+
+- Complete Rust-based example showing both provider and user clients
+- Tor integration for enhanced privacy
+- Demonstrates the full payment flow
+
+### 📁 Project Structure
+
+```
+hidden-payment-channels/
+├── contracts/           # Smart contracts (Solidity)
+├── service/            # Node.js API service
+├── examples/           # Rust implementation examples
+│   └── tor-provider/   # Complete provider/user example
+├── demo-data/          # Demo wallets and configuration
+└── README.md
+```
+
+## ⚠️ Demo Notice
+
+**This project is currently configured for demonstration purposes only.** Private keys are hardcoded using demo wallets from the `/demo-data` directory. **Do not use in production** without proper key management and security measures.
+
+## Known Issues
+
+- [hpc-service](./service/) is currently purely set up in demo mode, participating parties have their wallets predefined in [demo-data](./demo-data/)
+- host should not immediately claim tickets but instead use an unpredictable pattern to reduce linkage between onchain activity and funds
+- we currently do not use broadcasters in railgun, this exposes some meta data leakage
+- ticket tracking is on memory, this is useful for a DEMO as it allows us to start with a clean slate every time, not useful in production
+- smart contracts are probably badly written
+- for maximum privacy: user must fund their railgun wallet and wait at least an hour before starting to issue tickets
+- for maximum privacy: railgun RPC requests, and other HTTP traffic should be send through TOR or a mixnet
+
+## Roadmap
+
+#### contracts
+
+- support for multiple parties (not just hardcoded DEMO wallets)
+- allow for the original funder to drain the wallet after a cool-off period (ex 31 days)
+- reduce replay attacks from tickets
+- use probabilistic tickets
+- harden smart contract, security improvements, cosmetic changes
+
+#### service
+
+- support for multiple parties (not just hardcoded DEMO wallets)
+- decouple API and SDK
+- switch to probabilistic tickets
+- track tickets in a local DB
+- option to tunnel all railgun traffic through a socks5 proxy
