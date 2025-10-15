@@ -16,8 +16,8 @@ He wants to be paid **privately** and offer the service **anonymously**.
 **Nothing** should link back to him.
 
 1. Bob runs a [Nimbus client](https://github.com/status-im/nimbus-eth1) at http://localhost:9545
-2. Bob runs a [HPC host service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
-3. Bob runs a client that uses HPC service, for example [tor-provider-host](./examples/tor-provider/)
+2. Bob runs a [hpc-host-service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
+3. Bob runs a client that uses `hpc-host-service`, for example [tor-provider-host](./examples/tor-provider/)
 
    1. `tor-provider-host` will launch a hidden service (http://xyz.onion)
    2. will proxy all traffic to the `Nimbus client`
@@ -28,8 +28,8 @@ Result: a URL (http://xyz.onion) that serves RPC traffic and requires payment ti
 Scenario: Alice wants to access a premium, dedicated RPC provider **privately**.
 She needs a way to access it and pay for it.
 
-1. Alice runs [HPC user service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
-2. Alice sends shielded funds to the her `HPC user service` railgun wallet
+1. Alice runs [hpc-user-service](./service/) at http://localhost:8080 (this step is skipped once we build an SDK)
+2. Alice sends shielded funds to the her `hpc-user-service` railgun wallet
 3. Alice runs [tor-provider-user](./examples/tor-provider/)
 
    1. `tor-provider-user` will launch a proxy waiting to receive RPC requests at http://localhost:8545
@@ -37,6 +37,28 @@ She needs a way to access it and pay for it.
    3. adds the RPC url into her wallet (http://localhost:8545/?p=http://xyz.onion)
 
 In these extreme scenarios, both parties may want to be completely private, you can use HiddenPaymentChannels without TOR.
+
+```mermaid
+graph LR
+    User[user] --> TPCU[tor-provider user client]
+    TPCU --> HPCU[hpc-user-service]
+    TPCU --> TOR[TOR network]
+    TOR --> TPCH[tor-provider host client]
+    TPCH --> HPCH[hpc-host-service]
+    TPCH --> NIMBUS[Nimbus RPC provider]
+    NIMBUS <--> NODES[other NODES]
+
+    classDef userNode fill:#e1f5fe
+    classDef serviceNode fill:#f3e5f5
+    classDef networkNode fill:#e8f5e8
+    classDef providerNode fill:#fff3e0
+
+    class User userNode
+    class TPCU,TPCH serviceNode
+    class HPCU,HPCH serviceNode
+    class TOR,NODES networkNode
+    class NIMBUS providerNode
+```
 
 ## Architecture
 
@@ -91,9 +113,10 @@ hidden-payment-channels/
 
 - [hpc-service](./service/) is currently purely set up in demo mode, participating parties have their wallets predefined in [demo-data](./demo-data/)
 - host should not immediately claim tickets but instead use an unpredictable pattern to reduce linkage between onchain activity and funds
-- we currently do not use broadcasters in railgun, this exposes some meta data leakage
+- we currently do not use broadcasters in railgun, this exposes some metadata
 - ticket tracking is on memory, this is useful for a DEMO as it allows us to start with a clean slate every time, not useful in production
 - smart contracts are probably badly written
+- bootstrapping `tor-provider-user` requires communication first with a free RPC provider (for railgun), this is generally fine but we can also do [this](#tor-provider)
 
 ## Roadmap
 
@@ -112,6 +135,11 @@ hidden-payment-channels/
 - switch to probabilistic tickets
 - track tickets in a local DB
 - option to tunnel all railgun traffic through a socks5 proxy
+- onion service discovery
+
+#### tor-provider
+
+- offer free mode for RPC requests specific to the railgun contract, this helps with the bootstrapping problem
 
 ## Submission Details
 
