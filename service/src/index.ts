@@ -136,8 +136,9 @@ async function main() {
     for (const [name, balance] of Object.entries(newBalances)) {
       if (balances && balance !== balances[name as keyof typeof balances]) {
         console.log(
-          `👀 ${name} balance changed:`,
-          balance - balances[name as keyof typeof balances]
+          `👀 ${name} balance changed by ${formatUnits(
+            balance - balances[name as keyof typeof balances]
+          )} WETH`
         );
       }
     }

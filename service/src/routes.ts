@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 import { isEngineInitialized } from "./engine";
 import { logger } from "./utils";
-import { Contract } from "ethers";
+import { Contract, formatUnits } from "ethers";
 import { ClaimableTicket, Ticket } from "./types";
 import {
   solidityPackedKeccak256,
@@ -19,7 +19,10 @@ BigInt.prototype.toJSON = function () {
   return String(this);
 };
 
+// @TODO: properly implement pending nonces and use probabilistic approach
+// onchain nonce
 let hostNonce = 0n;
+// onchain nonce
 let userNonce = 0n;
 
 export default function createRoutes(
@@ -46,7 +49,7 @@ export default function createRoutes(
       return { valid: false, error: "ticket is required" };
     }
 
-    if (ticket.nonce < userNonce) {
+    if (ticket.nonce < hostNonce) {
       return { valid: false, error: "ticket is outdated" };
     }
     if (ticket.toRailgunAddress !== hostRailgunInfo.address) {
@@ -134,9 +137,14 @@ export default function createRoutes(
 
     async (req: Request, res: Response) => {
       try {
+        console.log(`userNonce: ${userNonce}, hostNonce: ${hostNonce}`);
         const unclaimedTickets = userNonce - hostNonce;
         // only once the user claims a ticket, the nonce should be incremented
-        const newNonce = userNonce === 0n ? userNonce + 1n : userNonce;
+        let newNonce = unclaimedTickets === 0n ? userNonce : userNonce + 1n;
+        // first ever nonce
+        if (newNonce === 0n) {
+          newNonce = newNonce + 1n;
+        }
 
         const ticket: Ticket = {
           toRailgunAddress: hostRailgunInfo.address,
@@ -170,7 +178,14 @@ export default function createRoutes(
           signature: compactSignature,
         };
 
-        console.log("generated ticket", ticket.nonce, ticket.amount);
+        console.log(
+          `generated ticket with nonce ${ticket.nonce} and amount ${formatUnits(
+            ticket.amount.toString()
+          )} WETH`
+        );
+
+        // hack: we don't do any independent tracking in this demo
+        userNonce = userNonce + 1n;
 
         res.json({ ticket: claimableTicket });
       } catch (error: any) {
@@ -197,7 +212,12 @@ export default function createRoutes(
           return res.status(400).json({ error });
         }
 
-        console.log("validated ticket", ticket.nonce, ticket.amount);
+        console.log(
+          `verified ticket with nonce ${ticket.nonce} and amount ${formatUnits(
+            ticket.amount.toString()
+          )} WETH`
+        );
+
         res.json({ valid: true });
       } catch (error: any) {
         logger.error("Error validating ticket:", error);
@@ -226,6 +246,16 @@ export default function createRoutes(
         }
 
         await claim_ticket(hostClearnetWallet, hostRailgunInfo, ticket);
+
+        console.log(
+          `claimed ticket with nonce ${ticket.nonce} and amount ${formatUnits(
+            ticket.amount.toString()
+          )} WETH`
+        );
+
+        userNonce = BigInt(ticket.nonce);
+        hostNonce = BigInt(ticket.nonce);
+
         res.json({ result: true });
       } catch (error: any) {
         logger.error("Error claiming ticket:", error);
