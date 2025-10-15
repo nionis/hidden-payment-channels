@@ -11,6 +11,8 @@ If you are a judge start here [Submission Details](#submission-details).
 
 ## Overview
 
+<!-- insert video -->
+
 Scenario: Bob is an RPC provider and wants to offer his RPC service to others.
 He wants to be paid **privately** and offer the service **anonymously**.
 **Nothing** should link back to him.
@@ -36,6 +38,8 @@ She needs a way to access it and pay for it.
    2. she finds Bob's onion service (http://xyz.onion) (TODO: announce via smart contract)
    3. adds the RPC url into her wallet (http://localhost:8545/?p=http://xyz.onion)
 
+Result: Alice can use the hidden RPC service, she pays with micropayments using tickets
+
 In these extreme scenarios, both parties may want to be completely private, you can use HiddenPaymentChannels without TOR.
 
 ```mermaid
@@ -59,6 +63,10 @@ graph LR
     class TOR,NODES networkNode
     class NIMBUS providerNode
 ```
+
+## Running the demo
+
+See this [guide](./TRY_IT.md) on how to run this on your own machine.
 
 ## Architecture
 
