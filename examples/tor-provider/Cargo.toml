@@ -1,0 +1,81 @@
+[package]
+name = "tor-provider"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "tor-provider-host"
+path = "src/bin/host.rs"
+
+[[bin]]
+name = "tor-provider-user"
+path = "src/bin/user.rs"
+
+[dependencies]
+# Async runtime
+tokio = { version = "1.47.1", features = ["full"] }
+
+# Tor client
+arti-client = { version = "0.23.0", features = [
+    "tokio",
+    "onion-service-service",
+    "onion-service-client",
+] }
+tor-rtcompat = { version = "0.23.0", features = ["tokio"] }
+tor-hsservice = { version = "0.23.0" }
+tor-hsrproxy = { version = "0.23.0" }
+tor-config = { version = "0.23.0" }
+
+# HTTP server
+axum = "0.8.1"
+tower = "0.5.2"
+tower-http = { version = "0.6.2", features = ["trace", "limit", "timeout"] }
+
+# HTTP client (over Tor)
+hyper = { version = "0.14", features = [
+    "client",
+    "http1",
+    "http2",
+    "stream",
+    "backports",
+    "tcp",
+] }
+reqwest = { version = "0.12", features = ["json"] }
+tokio-rustls = "0.24"
+rustls = "0.21"
+webpki-roots = "0.25"
+
+# Database for payment tracking
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# Additional utilities
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "5.0"
+
+# Config & CLI
+clap = { version = "4.5.25", features = ["derive", "env"] }
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+
+# Error handling
+anyhow = "1.0.100"
+thiserror = "2.0.9"
+
+# Tracing & logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Utilities
+bytes = "1.9.0"
+parking_lot = "0.12"
+percent-encoding = "2.3"
+urlencoding = "2.1"
+uuid = { version = "1.11", features = ["v4"] }
+async-trait = "0.1"
+
+# UI framework
+iced = { version = "0.13", features = ["tokio"] }
+iced_aw = { version = "0.11", features = ["tabs"] }
