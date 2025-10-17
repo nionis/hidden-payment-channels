@@ -152,6 +152,7 @@ hidden-payment-channels/
 - track tickets in a local DB
 - option to tunnel all railgun traffic through a socks5 proxy
 - onion service discovery
+- experiment with [x402](https://github.com/coinbase/x402) support
 
 #### tor-provider
 
@@ -164,6 +165,12 @@ I've worked on two projects [Hidden Payment Channels](./service/) and [Tor Provi
 In short, one is a service that allows for private payments across user and service, and the other is a real product (serving RPC traffic over TOR) which uses it.
 
 Reading this README.md should give you enough insight on what these projects do and how they differ.
+
+## Gist
+
+- **Problem:** There is no product to allow for private preserving micro-payments. Micro-payments are necessary for pay-as-you-use services like RPC, AI, etc
+- **Solution:** Two shielded wallets, anonymous interactions with a deposit-like smart contract, and private ticket issuance.
+- **Impact:** Given we have created the SDK, we can allow any website and backend to embed a payment gateway that simply forwards funds to the service automatically and privately.
 
 **Q: Which bounty (or combination) you selected?**
 
